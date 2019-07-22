@@ -2,7 +2,6 @@
 
 import os, requests, re, shutil
 import click
-from tqdm import tqdm
 from requests_html import HTMLSession
 
 
@@ -12,21 +11,37 @@ def get_page(url):
     url = url.rstrip("/")
     session = HTMLSession()
     r = session.get(url)
-    r.html.render()
+    r.html.render()  # Attempt to bypass some scraping protection by rendering page for JS execution
     content = str(r.content)  # Get all data
-    # print(r.html.text)
     relative_urls = re.findall(
         r"(?:[/|.|\w|\s|-])*\.(?:jpg|jpeg|gif|png)(?:[\w])*", content
-    )
-    # print("\n".join(not_relative_urls))
-    print("\n".join(relative_urls))
-    matches_list = relative_urls
-    print(matches_list)
-    for img in tqdm(matches_list):
-        # img = process_url(url, img)
-        print(img)
-        download_img(url, img)
-    print("DONE!")
+    )  # I can parse raw html for images
+    links = img_links(r.html)  # And i can use cheats =P
+    links = "\n".join(links)
+    print(links)
+    # print("\n".join(relative_urls))
+    print("Found " + str(len(links)) + " images!")
+    # for img in relative_urls:
+    # download_img(url, img)
+    print("DONE! Downloaded " + str(len(links)) + " images!")
+
+
+def img_links(html):
+    def gen():
+        for img_link in html.find("img"):
+            try:
+                src = img_link.attrs["src"].strip()
+                if (
+                    src.endswith("jpg")
+                    or src.endswith("jpeg")
+                    or src.endswith("png")
+                    or src.endswith("gif")
+                ):
+                    yield src
+            except KeyError:
+                pass
+
+    return set(gen())
 
 
 def process_url(url, img_url):
@@ -37,11 +52,10 @@ def process_url(url, img_url):
     else:
         if img_url.startswith("//"):
             result_url = "https:" + img_url
-            print(result_url)
+            # print(result_url)
         else:
             if img_url.startswith("/"):
                 result_url = url + img_url
-                print(result_url)
             else:
                 print("Invalid image URL!")
     return result_url
@@ -59,15 +73,14 @@ def download_img(url, img_url):
             "images/", exist_ok=True
         )  # Create directory for images, skip if exists
         img_name = get_name(img_url)
-        print(img_name)
+        print("Downloading " + img_name)
         with open("images/" + img_name, "wb") as out_img:
             shutil.copyfileobj(response.raw, out_img)  # Save image
         del response
+        print("OK")
     else:
         print(response.status_code + "\nFAILED TO DOWNLOAD IMAGE: " + result_img_url)
-        print(response.status_code)
 
 
 if __name__ == "__main__":
     get_page()
-
