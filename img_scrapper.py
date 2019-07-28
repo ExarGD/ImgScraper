@@ -43,7 +43,7 @@ def img_links(html):
                 ):
                     yield src
             except requests.exceptions.MissingSchema:
-                print("Invalid URL " + img)
+                print("Invalid URL " + img_link)
                 print("Terminating")
 
     return set(gen())
