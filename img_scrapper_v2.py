@@ -11,17 +11,35 @@ def get_img(url):
     url = url.rstrip("/")
     session = HTMLSession()
     r = session.get(url)
-    content = str(r.content)  # Get all data
-    relative_urls = re.findall(
-        r"(?:[/|.|\w|\s|-])*\.(?:jpg|jpeg|gif|png)(?:[\w])*", content
-    )  # I can parse raw html for images
-    re_count = len(relative_urls)
+    r.html.render()  # Attempt to bypass some scraping protection by rendering page for JS execution
+    links = img_links(r.html)  # And i can use cheats =P
+    link_count = len(links)
     # print("\n".join(links))
-    print("\n".join(relative_urls))
-    print("Found " + str(re_count) + " images!")
-    for img in relative_urls:
+    print("Found " + str(link_count) + " images!")
+    for img in links:
         download_img(url, img)
-    print("DONE! Downloaded images: " + str(re_count))
+    print("DONE! Downloaded images: " + str(link_count))
+
+
+# This function uses requests-html functionality to search for a tags
+def img_links(html):
+    def gen():
+        for img_link in html.find("img"):
+            try:
+                src = img_link.attrs["src"].strip()
+                print("SRC: " + src)
+                if (
+                    src.endswith("jpg")
+                    or src.endswith("jpeg")
+                    or src.endswith("png")
+                    or src.endswith("gif")
+                ):
+                    yield src
+            except requests.exceptions.MissingSchema:
+                print("Invalid URL " + img_link)
+                print("Terminating")
+
+    return set(gen())
 
 
 def process_url(url, img_url):
