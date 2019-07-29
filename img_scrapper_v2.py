@@ -8,7 +8,11 @@ from requests_html import HTMLSession  # Cheat, helps to render pages for javasc
 @click.command()
 @click.option("--url")
 def get_img(url):
-    url = url.rstrip("/")
+    try:
+        url = url.rstrip("/")
+    except AttributeError:
+        print("URL is not specified")
+        exit()
     session = HTMLSession()
     r = session.get(url)
     r.html.render()  # Attempt to bypass some scraping protection by rendering page for JS execution
